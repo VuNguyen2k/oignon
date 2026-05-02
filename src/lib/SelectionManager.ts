@@ -28,6 +28,7 @@ export class SelectionManager {
   private connectedIds = new Set<string>()
   private selectionRingTexture: Texture | null = null
   private nodeContainers: Map<string, Container> = new Map()
+  private isDarkMode = true
 
   // Selection curves
   readonly selectionCurvesContainer: Container
@@ -50,6 +51,27 @@ export class SelectionManager {
   init(selectionRingTexture: Texture, nodeContainers: Map<string, Container>) {
     this.selectionRingTexture = selectionRingTexture
     this.nodeContainers = nodeContainers
+  }
+
+  /**
+   * Update selection ring color for dark/light mode.
+   * Ring texture is white; tint to black in light mode for contrast.
+   */
+  setDarkMode(isDark: boolean) {
+    if (isDark === this.isDarkMode) return
+    this.isDarkMode = isDark
+    const tint = isDark ? 0xffffff : 0x000000
+
+    // Re-tint rings on existing selected endpoint clones.
+    // Ring is the last child added after the 3 base sprites (shadow, fill, overlay).
+    for (const id of this.selectedIds) {
+      const clone = this.endpointClones.get(id)
+      if (!clone) continue
+      const ring = clone.children[clone.children.length - 1]
+      if (ring instanceof Sprite) {
+        ring.tint = tint
+      }
+    }
   }
 
   /**
@@ -306,6 +328,7 @@ export class SelectionManager {
     if (isSelected && this.selectionRingTexture) {
       const ring = new Sprite(this.selectionRingTexture)
       ring.anchor.set(0.5)
+      ring.tint = this.isDarkMode ? 0xffffff : 0x000000
       clone.addChild(ring)
     }
 

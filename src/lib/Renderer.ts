@@ -770,6 +770,9 @@ export class Renderer {
     // Update year axis overlay theme
     this.yearAxisOverlay.setDarkMode(isDark)
 
+    // Update selection ring color (white in dark mode, black in light mode)
+    this.selectionManager.setDarkMode(isDark)
+
     // Disable particles in light mode
     this.setParticlesVisible(isDark)
 

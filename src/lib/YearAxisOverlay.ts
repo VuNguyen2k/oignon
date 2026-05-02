@@ -83,7 +83,8 @@ export class YearAxisOverlay {
     const bgColor = this._isDarkMode ? 0x000000 : 0xffffff
     const bgAlpha = this._isDarkMode ? 0.4 : 0.6
     const tickColor = this._isDarkMode ? 0x444444 : 0x999999
-    const gridColor = this._isDarkMode ? 0x333333 : 0xcccccc
+    const gridColor = this._isDarkMode ? 0xffffff : 0x444444
+    const gridAlpha = this._isDarkMode ? 0.3 : 0.45
 
     // Create labels, tick marks, and grid lines
     for (const { year } of this.data) {
@@ -91,7 +92,7 @@ export class YearAxisOverlay {
       const gridLine = new Graphics()
       gridLine.moveTo(0, 0)
       gridLine.lineTo(this._screenWidth || 2000, 0)
-      gridLine.stroke({ width: 1, color: gridColor, alpha: 0.3 })
+      gridLine.stroke({ width: 1, color: gridColor, alpha: gridAlpha })
       gridLine.label = `grid-${year}`
       gridLine.x = 0
       this.gridContainer.addChild(gridLine)
@@ -171,7 +172,8 @@ export class YearAxisOverlay {
    * Update grid line widths when screen size changes
    */
   private updateGridLineWidth() {
-    const gridColor = this._isDarkMode ? 0x333333 : 0xcccccc
+    const gridColor = this._isDarkMode ? 0xffffff : 0x444444
+    const gridAlpha = this._isDarkMode ? 0.3 : 0.45
 
     for (const { year } of this.data) {
       const gridLine = this.gridContainer.getChildByLabel(`grid-${year}`) as Graphics
@@ -179,7 +181,7 @@ export class YearAxisOverlay {
         gridLine.clear()
         gridLine.moveTo(0, 0)
         gridLine.lineTo(this._screenWidth, 0)
-        gridLine.stroke({ width: 1, color: gridColor, alpha: 0.3 })
+        gridLine.stroke({ width: 1, color: gridColor, alpha: gridAlpha })
       }
     }
   }
@@ -198,7 +200,8 @@ export class YearAxisOverlay {
     const bgColor = isDark ? 0x000000 : 0xffffff
     const bgAlpha = isDark ? 0.4 : 0.6
     const tickColor = isDark ? 0x444444 : 0x999999
-    const gridColor = isDark ? 0x333333 : 0xcccccc
+    const gridColor = isDark ? 0xffffff : 0x444444
+    const gridAlpha = isDark ? 0.3 : 0.45
 
     // Update all elements
     for (const { year } of this.data) {
@@ -225,7 +228,7 @@ export class YearAxisOverlay {
         gridLine.clear()
         gridLine.moveTo(0, 0)
         gridLine.lineTo(this._screenWidth || 2000, 0)
-        gridLine.stroke({ width: 1, color: gridColor, alpha: 0.3 })
+        gridLine.stroke({ width: 1, color: gridColor, alpha: gridAlpha })
       }
     }
   }

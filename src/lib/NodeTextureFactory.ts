@@ -20,7 +20,7 @@ const NODE_HIGHLIGHT = {
 
 /** Stroke configuration */
 const NODE_STROKE = {
-  default: { width: 5, color: 0x000000, alpha: 0.7 },
+  default: { width: 5, color: 0x555555, alpha: 0.7 },
 }
 
 export interface NodeTextures {

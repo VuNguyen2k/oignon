@@ -55,6 +55,7 @@ export class Renderer {
   private batchedCurves: BatchedCurveMesh | null = null
   private initialized = false
   private isDarkMode = true
+  private userParticlesEnabled = true
 
   // Extracted modules
   private yearAxisOverlay: YearAxisOverlay
@@ -733,6 +734,13 @@ export class Renderer {
   private particleAnimationRunner = new AnimationRunner()
 
   setParticlesVisible(visible: boolean, duration = 300) {
+    // Treat external calls as the user's preference; particles only actually
+    // show in dark mode.
+    this.userParticlesEnabled = visible
+    this.applyParticlesVisible(visible && this.isDarkMode, duration)
+  }
+
+  private applyParticlesVisible(visible: boolean, duration = 300) {
     // Ensure containers are visible during animation
     for (const ps of this.particleSystems) {
       ps.container.visible = true
@@ -773,8 +781,8 @@ export class Renderer {
     // Update selection ring color (white in dark mode, black in light mode)
     this.selectionManager.setDarkMode(isDark)
 
-    // Disable particles in light mode
-    this.setParticlesVisible(isDark)
+    // Particles only show in dark mode AND when the user has them enabled
+    this.applyParticlesVisible(isDark && this.userParticlesEnabled)
 
     // Determine target background color
     let targetColor: number

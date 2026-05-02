@@ -127,6 +127,14 @@ export class BatchedCurveMesh extends Mesh<Geometry, Shader> {
   }
 
   /**
+   * Read the current progress for a specific curve (0-1).
+   */
+  getProgress(curveIndex: number): number {
+    if (curveIndex < 0 || curveIndex >= this._curveCount) return 0
+    return (this.progressData[curveIndex * 4] ?? 0) / 255
+  }
+
+  /**
    * Set progress for a specific curve (0-1)
    */
   setProgress(curveIndex: number, progress: number) {

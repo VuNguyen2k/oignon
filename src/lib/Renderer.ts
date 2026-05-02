@@ -22,6 +22,10 @@ import { YearAxisOverlay } from './YearAxisOverlay'
 import { SelectionManager, type CurveNodeMapping } from './SelectionManager'
 import { AnimationRunner, animateProgress } from './AnimationRunner'
 import { easeInOutCubic, easeOutCubic, easeOutElastic, easeOutQuad, easeMaterial } from './easing'
+import { type WorkTypeBucket } from './workTypes'
+import { TypeFilter } from './TypeFilter'
+
+const TYPE_FILTER_DURATION = 400
 
 // Viewport zoom limits (relative to base/fit scale)
 const MIN_SCALE_FACTOR = 1
@@ -71,6 +75,15 @@ export class Renderer {
   private curveAnimationRunner = new AnimationRunner()
   private curveNodeMappings: CurveNodeMapping[] = []
   private curveDataCache: CurveData[] = []
+
+  // Type-filter state — TypeFilter is the single source of truth for filter
+  // queries (used by both the main graph and the selection overlay).
+  private typeFilter = new TypeFilter()
+  private typeFilterAnimationRunner = new AnimationRunner()
+  // Current animated values on the main graph (used as start values when
+  // chaining new animations).
+  private nodeFilterAlpha: Map<string, number> = new Map()
+  private curveFilterProgress: Float32Array | null = null
 
   // Curve configuration
   drawDirectionStrategy: DrawDirectionStrategy = 'alternating'
@@ -208,7 +221,11 @@ export class Renderer {
 
     // Init selection manager with current node containers
     if (this.nodeTextures) {
-      this.selectionManager.init(this.nodeTextures.selectionRing, this.nodeContainers)
+      this.selectionManager.init(
+        this.nodeTextures.selectionRing,
+        this.nodeContainers,
+        this.typeFilter,
+      )
     }
   }
 
@@ -262,6 +279,7 @@ export class Renderer {
     })
 
     this.curvesContainer.addChild(this.batchedCurves)
+    this.curveFilterProgress = new Float32Array(curves.length).fill(1)
   }
 
   private createCurveData(
@@ -292,6 +310,7 @@ export class Renderer {
     if (!this.nodeTextures) return
 
     this.nodeSpriteOrder = []
+    this.nodeFilterAlpha.clear()
 
     for (const node of grid.nodes.values()) {
       const container = this.createNodeSprite(node)
@@ -303,6 +322,9 @@ export class Renderer {
         sprite: container,
         citationCount: node.citedBy.length,
       })
+
+      this.typeFilter.setNodeType(node.id, node.metadata?.type)
+      this.nodeFilterAlpha.set(node.id, 1)
     }
 
     this.nodeSpriteOrder.sort((a, b) => b.citationCount - a.citationCount)
@@ -668,6 +690,75 @@ export class Renderer {
 
     // Also update cloned endpoint nodes
     this.selectionManager.updateEndpointColors()
+  }
+
+  // --- Type filter ---
+
+  /**
+   * Apply a set of disabled work-type buckets. Filtered nodes fade to a low
+   * alpha and curves where either endpoint is filtered animate their
+   * per-curve progress to 0 (re-using the same draw-in/out mechanism the
+   * initial render and selection animations rely on).
+   */
+  setTypeFilter(disabled: Set<WorkTypeBucket>) {
+    this.typeFilter.setDisabled(disabled)
+
+    // Per-node start (current animated alpha) and target (filter-derived alpha).
+    const nodeStart: Map<string, number> = new Map()
+    const nodeTarget: Map<string, number> = new Map()
+    for (const [id] of this.nodeContainers) {
+      nodeStart.set(id, this.nodeFilterAlpha.get(id) ?? 1)
+      nodeTarget.set(id, this.typeFilter.nodeTargetAlpha(id))
+    }
+
+    // Per-curve start/target for the main mesh.
+    const curveCount = this.curveNodeMappings.length
+    const curveStart = this.curveFilterProgress
+      ? new Float32Array(this.curveFilterProgress)
+      : new Float32Array(curveCount).fill(1)
+    const curveTarget = new Float32Array(curveCount)
+    for (let i = 0; i < curveCount; i++) {
+      const m = this.curveNodeMappings[i]!
+      curveTarget[i] = this.typeFilter.curveTargetProgress(m.sourceNodeId, m.targetNodeId)
+    }
+
+    const batchedCurves = this.batchedCurves
+    const filterProgress = this.curveFilterProgress
+
+    // Capture current selection-overlay state once so we can lerp it alongside.
+    const selectionState = this.selectionManager.captureFilterStartState()
+
+    animateProgress(
+      this.typeFilterAnimationRunner,
+      TYPE_FILTER_DURATION,
+      easeInOutCubic,
+      (t) => {
+        // Main graph nodes
+        for (const [id, container] of this.nodeContainers) {
+          const start = nodeStart.get(id) ?? 1
+          const end = nodeTarget.get(id) ?? 1
+          const value = start + (end - start) * t
+          container.alpha = value
+          this.nodeFilterAlpha.set(id, value)
+        }
+
+        // Main graph curves
+        if (batchedCurves && filterProgress) {
+          for (let i = 0; i < curveCount; i++) {
+            const start = curveStart[i] ?? 1
+            const end = curveTarget[i] ?? 1
+            const value = start + (end - start) * t
+            filterProgress[i] = value
+            batchedCurves.setProgress(this.curveNodeMappings[i]!.curveIndex, value)
+          }
+          batchedCurves.updateProgress()
+        }
+
+        // Selection overlay (clones + selection curve mesh) — same lerp,
+        // driven by the shared TypeFilter so behaviour matches the main graph.
+        this.selectionManager.applyFilterTick(t, selectionState)
+      },
+    )
   }
 
   // --- Selection ---

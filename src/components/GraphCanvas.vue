@@ -244,10 +244,19 @@ function renderGraph() {
 
   // Animate in: start both, curves wait for both source and target nodes
   renderer.animateNodesIn({ totalDuration: 4000, nodeDuration: 1000 })
-  renderer.animateCurvesIn({
-    duration: 1000,
-    awaitBothNodes: true,
-  })
+  renderer.animateCurvesIn(
+    {
+      duration: 1000,
+      awaitBothNodes: true,
+    },
+    () => {
+      // Apply any active work-type filter once the initial draw-in finishes
+      // (otherwise the init animation would overwrite per-curve progress).
+      if (renderer && store.disabledTypeBuckets.size > 0) {
+        renderer.setTypeFilter(store.disabledTypeBuckets)
+      }
+    },
+  )
 
   // Fit to view after rendering
   fitToView()
@@ -452,6 +461,13 @@ function handleSetParticlesVisible(visible: boolean) {
   renderer.setParticlesVisible(visible)
 }
 
+// Type-filter handler
+import type { WorkTypeBucket } from '@/lib/workTypes'
+function handleSetTypeFilter(disabled: Set<WorkTypeBucket>) {
+  if (!renderer) return
+  renderer.setTypeFilter(disabled)
+}
+
 // Expose for parent components
 defineExpose({
   fitToView,
@@ -461,6 +477,7 @@ defineExpose({
   setColormap: handleColormapChange,
   setDarkMode: handleSetDarkMode,
   setParticlesVisible: handleSetParticlesVisible,
+  setTypeFilter: handleSetTypeFilter,
 })
 </script>
 

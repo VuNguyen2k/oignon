@@ -17,6 +17,7 @@ import {
   type TabId,
 } from '@/types/mobile'
 import type { Author } from '@/types'
+import type { WorkTypeBucket } from '@/lib/workTypes'
 import { useGraphStore } from '@/stores/graph'
 import { buildGraph, buildAuthorGraph, preprocessGraph } from '@/lib/graphBuilder'
 import { getBackgroundColorHex, COLORMAPS } from '@/lib/colormap'
@@ -385,6 +386,11 @@ function handleToggleParticles() {
   store.toggleParticles()
   graphCanvas.value?.setParticlesVisible(store.particlesEnabled)
 }
+
+function handleToggleTypeBucket(bucket: WorkTypeBucket) {
+  store.toggleTypeBucket(bucket)
+  graphCanvas.value?.setTypeFilter(store.disabledTypeBuckets)
+}
 </script>
 
 <template>
@@ -426,6 +432,7 @@ function handleToggleParticles() {
         :layout-mode="effectiveLayoutMode"
         @colormap-change="handleColormapChange"
         @toggle-particles="handleToggleParticles"
+        @toggle-type-bucket="handleToggleTypeBucket"
         @search="handleSearch"
         @build-author="handleAuthorSearch"
         @confirm-build-author="handleAuthorClick"

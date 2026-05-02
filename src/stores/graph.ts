@@ -15,6 +15,10 @@ import type {
 } from '@/types'
 import type { LayoutMode } from '@/types/mobile'
 import { hydrateMetadata, fetchPaper, fetchAuthor } from '@/lib/graphBuilder'
+import {
+  DEFAULT_DISABLED_BUCKETS,
+  type WorkTypeBucket,
+} from '@/lib/workTypes'
 
 export const useGraphStore = defineStore('graph', () => {
   // Graph data
@@ -74,6 +78,10 @@ export const useGraphStore = defineStore('graph', () => {
   // Particles enabled (only visible in dark mode)
   const particlesEnabled = ref(true)
 
+  // Disabled work-type buckets (e.g. preprint, peer-review).
+  // Nodes whose mapped bucket is in this set fade out in the renderer.
+  const disabledTypeBuckets = ref<Set<WorkTypeBucket>>(new Set(DEFAULT_DISABLED_BUCKETS))
+
   // Screen orientation for auto mode
   const screenIsLandscape = ref(false)
 
@@ -107,6 +115,7 @@ export const useGraphStore = defineStore('graph', () => {
   const TUTORIAL_KEY = 'oignon_tutorial'
   const LAYOUT_MODE_KEY = 'oignon:layoutMode'
   const THEME_KEY = 'oignon:theme'
+  const TYPE_FILTER_KEY = 'oignon:disabledTypeBuckets'
   const MAX_RECENT_GRAPHS = 10
 
   // Library state
@@ -151,6 +160,18 @@ export const useGraphStore = defineStore('graph', () => {
       const savedTheme = localStorage.getItem(THEME_KEY)
       if (savedTheme !== null) {
         isDarkMode.value = savedTheme === 'dark'
+      }
+
+      const savedFilter = localStorage.getItem(TYPE_FILTER_KEY)
+      if (savedFilter !== null) {
+        try {
+          const parsed = JSON.parse(savedFilter) as unknown
+          if (Array.isArray(parsed)) {
+            disabledTypeBuckets.value = new Set(parsed as WorkTypeBucket[])
+          }
+        } catch {
+          // ignore malformed value, fall back to defaults
+        }
       }
     } catch (e) {
       console.warn('Failed to load library data:', e)
@@ -227,6 +248,23 @@ export const useGraphStore = defineStore('graph', () => {
   // Particles toggle
   function toggleParticles() {
     particlesEnabled.value = !particlesEnabled.value
+  }
+
+  // Type-bucket filter toggle. Returns the new set so consumers can re-trigger
+  // reactive watchers if needed.
+  function toggleTypeBucket(bucket: WorkTypeBucket) {
+    const next = new Set(disabledTypeBuckets.value)
+    if (next.has(bucket)) {
+      next.delete(bucket)
+    } else {
+      next.add(bucket)
+    }
+    disabledTypeBuckets.value = next
+    try {
+      localStorage.setItem(TYPE_FILTER_KEY, JSON.stringify([...next]))
+    } catch (e) {
+      console.warn('Failed to save type filter:', e)
+    }
   }
 
   // Initialize library on store creation
@@ -864,5 +902,9 @@ export const useGraphStore = defineStore('graph', () => {
     // Particles
     particlesEnabled,
     toggleParticles,
+
+    // Work-type filter
+    disabledTypeBuckets,
+    toggleTypeBucket,
   }
 })

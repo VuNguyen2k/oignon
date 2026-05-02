@@ -30,9 +30,12 @@ const props = defineProps<{
 
 import type { Author } from '@/types'
 
+import type { WorkTypeBucket } from '@/lib/workTypes'
+
 const emit = defineEmits<{
   colormapChange: [index: number]
   toggleParticles: []
+  toggleTypeBucket: [bucket: WorkTypeBucket]
   search: [query: string]
   buildAuthor: [id: string]
   confirmBuildAuthor: [author: Author]
@@ -313,6 +316,7 @@ const activeComponent = computed(() => {
           :key="activeTab"
           @colormap-change="emit('colormapChange', $event)"
           @toggle-particles="emit('toggleParticles')"
+          @toggle-type-bucket="emit('toggleTypeBucket', $event)"
           @search="emit('search', $event)"
           @show-details="emit('showDetails')"
         />

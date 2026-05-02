@@ -11,7 +11,7 @@ export const TAB_HEIGHTS: Record<TabId, number> = {
   search: 60,
   details: 260,
   library: 260,
-  controls: 60,
+  controls: 110,
 }
 
 // Panel widths per tab (landscape mode)
@@ -19,7 +19,7 @@ export const TAB_WIDTHS: Record<TabId, number> = {
   search: 80,
   details: 320,
   library: 320,
-  controls: 80,
+  controls: 130,
 }
 
 // Resize constraints (portrait)

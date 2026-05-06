@@ -1,4 +1,4 @@
-# Oignon
+# Oignon (cloned from https://github.com/hballington12/oignon)
 
 [![DOI](https://zenodo.org/badge/1113322004.svg)](https://doi.org/10.5281/zenodo.17943218)
 [![arXiv](https://img.shields.io/badge/arXiv-2512.22159-b31b1b.svg)](https://arxiv.org/abs/2512.22159)
